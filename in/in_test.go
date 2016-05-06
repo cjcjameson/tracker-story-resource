@@ -13,8 +13,8 @@ import (
 
 	"github.com/onsi/gomega/gexec"
 
-	"github.com/concourse/tracker-resource"
-	"github.com/concourse/tracker-resource/in"
+	"github.com/cjcjameson/tracker-story-resource"
+	"github.com/cjcjameson/tracker-story-resource/in"
 )
 
 var _ = Describe("In", func() {
@@ -25,10 +25,10 @@ var _ = Describe("In", func() {
 	)
 
 	JustBeforeEach(func() {
-		binPath, err := gexec.Build("github.com/concourse/tracker-resource/in/cmd/in")
+		binPath, err := gexec.Build("github.com/cjcjameson/tracker-story-resource/in/cmd/in")
 		Expect(err).NotTo(HaveOccurred())
 
-		tmpDir, err = ioutil.TempDir("", "tracker_resource_in")
+		tmpDir, err = ioutil.TempDir("", "tracker_story_resource_in")
 
 		stdin := &bytes.Buffer{}
 		err = json.NewEncoder(stdin).Encode(request)

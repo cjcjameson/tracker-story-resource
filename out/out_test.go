@@ -148,20 +148,6 @@ var _ = Describe("Out", func() {
 				os.Remove(request.Params.ContentPath)
 			})
 		})
-
-		Context("when the activity endpoint returns an error", func() {
-			BeforeEach(func() {
-				server.AppendHandlers(
-					listStoriesHandler(trackerToken),
-					ghttp.RespondWith(http.StatusInternalServerError, nil),
-				)
-			})
-
-			It("returns a fatal error", func() {
-				session := runCommandExpectingStatus(outCmd, request, 1)
-				Expect(session.Err).To(Say("error fetching activity for story #565:"))
-			})
-		})
 	})
 })
 
