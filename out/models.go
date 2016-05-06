@@ -1,6 +1,6 @@
 package out
 
-import "github.com/concourse/tracker-resource"
+import "github.com/cjcjameson/tracker-story-resource"
 
 type OutRequest struct {
 	Source resource.Source `json:"source"`
@@ -8,8 +8,7 @@ type OutRequest struct {
 }
 
 type Params struct {
-	Repos       []string `json:"repos"`
-	CommentPath string   `json:"comment"`
+	ContentPath string `json:"content"`
 }
 
 type OutResponse struct {

@@ -1,6 +1,6 @@
 package in
 
-import "github.com/concourse/tracker-resource"
+import "github.com/cjcjameson/tracker-story-resource"
 
 type InRequest struct {
 	Source  resource.Source  `json:"source"`

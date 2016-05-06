@@ -2,6 +2,7 @@ package out_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -11,15 +12,14 @@ import (
 	"time"
 
 	"github.com/XenoPhex/go-tracker"
+	"github.com/cjcjameson/tracker-story-resource"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
 	. "github.com/onsi/gomega/gexec"
 
+	"github.com/cjcjameson/tracker-story-resource/out"
 	"github.com/onsi/gomega/ghttp"
-
-	"github.com/concourse/tracker-resource"
-	"github.com/concourse/tracker-resource/out"
 )
 
 var _ = Describe("Out", func() {
@@ -43,7 +43,7 @@ var _ = Describe("Out", func() {
 		os.RemoveAll(tmpdir)
 	})
 
-	Describe("integration with the real Tracker API", func() {
+	/*	Describe("integration with the real Tracker API", func() {
 		var (
 			request            out.OutRequest
 			storyId            string
@@ -83,7 +83,7 @@ var _ = Describe("Out", func() {
 			deleteActualStory(projectId, actualTrackerToken, storyId)
 		})
 
-	})
+	})*/
 
 	Context("when executed against a mock URL", func() {
 		var request out.OutRequest
@@ -105,102 +105,47 @@ var _ = Describe("Out", func() {
 					TrackerURL: server.URL(),
 					ProjectID:  projectId,
 				},
-				Params: out.Params{
-					Repos: []string{
-						"git",
-						"middle/git2",
-					},
-				},
+				Params: out.Params{},
 			}
 			response = out.OutResponse{}
-
 		})
 
 		AfterEach(func() {
 			server.Close()
 		})
 
-		Context("without a content file specified", func() {
+		FContext("without a content file specified", func() {
 			It("raises error", func() {
+				session := runCommandExpectingStatus(outCmd, request, 1)
+				Expect(session.Err).To(Say("no content file specified"))
 			})
 		})
 
-		Context("when a content file is specified with one story", func() {
+		FContext("when a content file is specified that doesn't exist", func() {
+			It("raises error", func() {
+				contentPath := "blah"
+				request.Params.ContentPath = contentPath
+				session := runCommandExpectingStatus(outCmd, request, 1)
+				Expect(session.Err).To(Say("reading content file"))
+			})
+		})
+
+		FContext("when a content file is specified with one story", func() {
 			BeforeEach(func() {
-				commentPath := "tracker-resource-content"
-				request.Params.CommentPath = commentPath
-				err := ioutil.WriteFile(filepath.Join(tmpdir, commentPath), []byte("some custom content"), os.ModePerm)
+				contentPath := "tracker-resource-content"
+				request.Params.ContentPath = contentPath
+				err := ioutil.WriteFile(filepath.Join(tmpdir, contentPath), []byte("fake-story-name"), os.ModePerm)
 				Expect(err).NotTo(HaveOccurred())
 
 				server.AppendHandlers(
-					listStoriesHandler(trackerToken),
-					storyActivityHandler(trackerToken, projectId, 565),
-
-					storyActivityHandler(trackerToken, projectId, 123456),
-					deliverStoryHandler(trackerToken, projectId, 123456),
-					deliverStoryCommentHandler(trackerToken, projectId, 123456, "some custom comment"),
-
-					storyActivityHandler(trackerToken, projectId, 123457),
-					deliverStoryHandler(trackerToken, projectId, 123457),
-					deliverStoryCommentHandler(trackerToken, projectId, 123457, "some custom comment"),
-
-					storyActivityHandler(trackerToken, projectId, 223456),
-					deliverStoryHandler(trackerToken, projectId, 223456),
-					deliverStoryCommentHandler(trackerToken, projectId, 223456, "some custom comment"),
-
-					storyActivityHandler(trackerToken, projectId, 323456),
-					deliverStoryHandler(trackerToken, projectId, 323456),
-					deliverStoryCommentHandler(trackerToken, projectId, 323456, "some custom comment"),
-
-					storyActivityHandler(trackerToken, projectId, 423456),
-					deliverStoryHandler(trackerToken, projectId, 423456),
-					deliverStoryCommentHandler(trackerToken, projectId, 423456, "some custom comment"),
-
-					storyActivityHandler(trackerToken, projectId, 523456),
-					deliverStoryHandler(trackerToken, projectId, 523456),
-					deliverStoryCommentHandler(trackerToken, projectId, 523456, "some custom comment"),
-
-					storyActivityHandler(trackerToken, projectId, 789456),
-					deliverStoryHandler(trackerToken, projectId, 789456),
-					deliverStoryCommentHandler(trackerToken, projectId, 789456, "some custom comment"),
-
-					storyActivityHandler(trackerToken, projectId, 223457),
-					deliverStoryHandler(trackerToken, projectId, 223457),
-					deliverStoryCommentHandler(trackerToken, projectId, 223457, "some custom comment"),
-
-					storyActivityHandler(trackerToken, projectId, 323457),
-					deliverStoryHandler(trackerToken, projectId, 323457),
-					deliverStoryCommentHandler(trackerToken, projectId, 323457, "some custom comment"),
-
-					storyActivityHandler(trackerToken, projectId, 423457),
-					deliverStoryHandler(trackerToken, projectId, 423457),
-					deliverStoryCommentHandler(trackerToken, projectId, 423457, "some custom comment"),
-
-					storyActivityHandler(trackerToken, projectId, 444444),
-
-					storyActivityHandler(trackerToken, projectId, 555555),
-					deliverStoryHandler(trackerToken, projectId, 555555),
-					deliverStoryCommentHandler(trackerToken, projectId, 555555, "some custom comment"),
-
-					storyActivityHandler(trackerToken, projectId, 666666),
+					createStoryHandler(trackerToken, projectId),
 				)
 			})
 
 			It("should make a story with the file's contents", func() {
 				session := runCommand(outCmd, request)
-				Expect(session.Err).To(Say("Checking for finished story: .*#123456"))
-				Expect(session.Err).To(Say("Checking for finished story: .*#123457"))
-
-				os.Remove(request.Params.CommentPath)
-			})
-		})
-
-		Context("when the comment file does not exist", func() {
-			It("should return a fatal error", func() {
-				request.Params.CommentPath = "some-non-existent-file"
-
-				session := runCommandExpectingStatus(outCmd, request, 1)
-				Expect(session.Err).To(Say("error reading comment file: open"))
+				Expect(session.Err).To(Say("Story created with ID: 2300 Name: fake-story-name"))
+				os.Remove(request.Params.ContentPath)
 			})
 		})
 
@@ -236,6 +181,16 @@ func runCommandExpectingStatus(outCmd *exec.Cmd, request out.OutRequest, status 
 	Eventually(session, timeout).Should(Exit(status))
 
 	return session
+}
+
+func createStoryHandler(token string, projectId string) http.HandlerFunc {
+	return ghttp.CombineHandlers(
+		ghttp.VerifyRequest(
+			"POST",
+			fmt.Sprintf("/services/v5/projects/%s/stories", projectId),
+		), ghttp.VerifyHeaderKV("X-TrackerToken", token),
+		ghttp.RespondWith(http.StatusOK, Fixture("new_story.json")),
+	)
 }
 
 func listStoriesHandler(trackerToken string) http.HandlerFunc {
