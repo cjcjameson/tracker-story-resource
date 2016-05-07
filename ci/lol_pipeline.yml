@@ -1,0 +1,31 @@
+jobs:
+- name: gather_story_from_google_sheets
+  plan:
+  - get: google_sheets_s3
+  - put: icebox
+    params:
+      content: google_sheets_s3/content
+
+resources:
+- name: google_sheets_s3
+  type: s3
+  source:
+    access_key_id: AKIAI6JM5A7BYP4Y4Y5Q
+    secret_access_key: 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
+    bucket: google-sheets-pivotal
+    region_name: us-west-2
+    versioned_file: "content"
+
+- name: icebox
+  type: tracker-story
+  source:
+    token: f0cd3982034cc2468f10baabfd26fb02
+    project_id: "1475212"
+    tracker_url: "https://www.pivotaltracker.com"
+
+resource_types:
+- name: tracker-story
+  type: docker-image
+  source:
+    repository: cjameson/tracker-story-resource
+
